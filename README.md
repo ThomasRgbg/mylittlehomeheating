@@ -27,5 +27,5 @@ monitored in combination of the room temperature.
  * I don't like proprietary stuff.
  * Currently playing with a ESP8266 based board and I2C based sensors. But running on battery might get a challenge.
 * Nicer Webinterface with more statistic.
-
+* Currently the fail-safe daemon allows only one channel enabled at one time. 
 
