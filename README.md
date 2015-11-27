@@ -22,6 +22,10 @@ hang with heating enabled.
 * Some more intelligent regulation of the time the heating is enabled. I have a very inert/slow underfloor heating. So when 
 the temperature in the room rises, it is already to late to switch off the valve again. Instead the reflow pipe need to be
 monitored in combination of the room temperature. 
-
+* Use of remote temperature sensors. 
+ * Tried already Bluetooth LowEnergy, which sucks on the software side.
+ * I don't like proprietary stuff.
+ * Currently playing with a ESP8266 based board and I2C based sensors. But running on battery might get a challenge.
+* Nicer Webinterface with more statistic.
 
 
