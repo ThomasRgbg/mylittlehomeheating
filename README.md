@@ -4,6 +4,11 @@
 
 Use at your own risk. There is no guarantee this works. 
 
+## Limitations
+
+The setup is currently hardcoded. E.g. there are currently 4 valves and 3 + 3 temperature channeles implemented. Making all of this
+flexible would make the software much more complex and unreliable, so I keep it simple for the moment.
+
 ## Description
 
 Some scripts, which are using an Raspberry PI with a PiFace digital like hardware interface. The scrips could enable the 
