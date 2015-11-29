@@ -9,6 +9,8 @@ import datetime
 import logging
 import os
 
+import cronus.beat as beat
+
 from optparse import OptionParser
 
 class thermometer(object):
@@ -53,29 +55,6 @@ class thermometer(object):
 	self.logger.info("Result: Name: {0}, i2c: 0x{1:x}, Temp: {2}".format(self.name, self.i2caddr, temper))
 	return temper
 
-
-def read_store_temp():
-
-    temp_luft = thermo_luft.get_temp()
-    temp_vorlauf = thermo_vorlauf.get_temp()
-    temp_ruecklauf = thermo_ruecklauf.get_temp()
-
-    temps = [1, temp_vorlauf, temp_ruecklauf, temp_luft, None, None, None]
-    temps[0] = datetime.datetime.now()
-
-    # convert (back) to tuple for sqlite3
-    ttemps = tuple(temps)
-
-    # Table:
-    # cur.execute("CREATE TABLE Temperatur(Timestamp INT, TempVorlauf REAL, TempRuecklauf REAL, TempVorne REAL, TempHinten REAL, TempBoden REAL, TempLuft REAL)")
-    with sqlcon:
-        cur = sqlcon.cursor()
-        cur.executemany("INSERT INTO Temperatur VALUES(?, ?, ?, ?, ?, ?, ?)", (ttemps,) ) # Important: (foo,)
-
-    sleep(60 - (24))
-
-
-
 if __name__== "__main__":
     optp = OptionParser()
 
@@ -105,7 +84,9 @@ if __name__== "__main__":
 
     # Setup logging.
     logging.basicConfig(level = opts.loglevel, datefmt='%H:%M:%S', format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s')
+    logger = logging.getLogger(__name__)
 
+    logger.debug(opts)
 
     # Data storage
     sqlcon = sqlite3.connect('/var/lib/temperatur/temperatur.db')
@@ -116,9 +97,29 @@ if __name__== "__main__":
     thermo_vorlauf = thermometer(i2caddr=0x18, name='Vorlauf')
     thermo_ruecklauf = thermometer(i2caddr=0x1e, name='Ruecklauf')
 
+    beat.set_rate(1.0/60)
 
-    while(True):
-	read_store_temp()
+    while beat.true():
+        temp_luft = thermo_luft.get_temp()
+        temp_vorlauf = thermo_vorlauf.get_temp()
+        temp_ruecklauf = thermo_ruecklauf.get_temp()
+
+        temps = [1, temp_vorlauf, temp_ruecklauf, temp_luft, None, None, None]
+        temps[0] = datetime.datetime.now()
+
+	logger.debug("Write into db: {0}".format(temps))
+
+        # convert (back) to tuple for sqlite3
+        ttemps = tuple(temps)
+
+        # Table:
+        # cur.execute("CREATE TABLE Temperatur(Timestamp INT, TempVorlauf REAL, TempRuecklauf REAL, TempVorne REAL, TempHinten REAL, TempBoden REAL, TempLuft REAL)")
+        with sqlcon:
+	    cur = sqlcon.cursor()
+            cur.executemany("INSERT INTO Temperatur VALUES(?, ?, ?, ?, ?, ?, ?)", (ttemps,) ) # Important: (foo,)
+
+	logger.debug("Wait for next turn")
+	beat.sleep()
 
 
 
