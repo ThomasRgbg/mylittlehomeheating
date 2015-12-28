@@ -21,6 +21,11 @@ Some more scripts are used to read the temperatures and plot some nice graphs ab
 Special features are: Remote control interface via XMPP, control daemon which checks for invalid software events to prevent a 
 hang with heating enabled. 
 
+### General idea
+
+Instead of having a daemon running all the time triggering on/off events, a on-event is directly called. And for the corressponding off-event, an one-time entry in the user crontab is created. So the system cron takes care of switching something off again. 
+To avoid any forgotten events, a hourly cronjobs checks additionally for forgotten events. 
+
 ## Todo/Ideas:
 
 * Use the temperature to enable the heating in a room. Currently all ist just time based.
