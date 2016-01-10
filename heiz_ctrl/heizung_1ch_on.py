@@ -56,6 +56,4 @@ if __name__ == '__main__':
     heizung = HeizungControl()
     heizung.heizung_1ch(args.channel,args.duration)
 
-#    heizung_create_token(channel, duration )
-#    heizung_1ch_on(channel)
 

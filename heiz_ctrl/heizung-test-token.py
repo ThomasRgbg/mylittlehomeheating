@@ -1,12 +1,16 @@
 #!/usr/bin/python
 
+# This file should be called periodically, e.g. in cron.hourly to check for stuck events. 
+
 import csv
 import datetime
 import sys
-import pifacedigitalio
 import os
 
-inputfile = "/var/lock/heizung_token.txt"
+from heizctrl.ctrl import HeizungControl
+
+
+tokenfile = "/var/lock/heizung_token.txt"
 logfile = open('/var/log/heizung_test_token.log', 'ab', 0)
 
 now = datetime.datetime.now()
@@ -24,28 +28,16 @@ def logprint(string):
         if sys.argv[1] == '-v':
             print string
 
-def heizung_all_off():
+def clean_tokenfile():
+    open(tokenfile,'w').close()
 
-    logprint("Switch all off")
-    pfd = pifacedigitalio.PiFaceDigital() 
-
-    pfd.output_pins[0].value=1 # "Schlafzimmer" (Buero)
-    pfd.output_pins[1].value=1 # "Kinderzimmer" (Schlafzimmer)
-    pfd.output_pins[2].value=1 # Bad
-    pfd.output_pins[3].value=1 # Wohnzimmer
-
-    logprint("State of Piface: {:08b} ".format(pfd.output_port.value))
-
-def clean_inputfile():
-    open(inputfile,'w').close()
-
-cleanup = True
+cleanup = False
 
 logprint("Testing Token")
 
-if os.path.isfile(inputfile):
-    os.chown(inputfile,1000,1000)
-    with open(inputfile, 'rb') as f:
+if os.path.isfile(tokenfile):
+    os.chown(tokenfile,1000,1000)
+    with open(tokenfile, 'rb') as f:
         reader = csv.reader(f)
         # print reader
         for row in reader:
@@ -55,15 +47,17 @@ if os.path.isfile(inputfile):
 
             t1 = int(row[0])
 
-            logprint('{0} : {1}'.format(timestamp, t1))
+            logprint('Found: Timestamp {0} Channel: {1}'.format(timestamp, t1))
 
             # Timestamp > 1h in future should not happen
             if timestamp - datetime.timedelta(seconds=3600) > now:
                 logprint("Event more than 1h in future - cleanup")
+                cleanup = True
     
             # Old timestamp left
             elif timestamp < now:
                 logprint("Old event detected - cleanup")
+                cleanup = True
 
             # Timestamp between now and 1h away - let it run
             else:
@@ -77,6 +71,7 @@ else:
 logprint("State cleanup: {0}".format(cleanup))
 
 if cleanup:
-    heizung_all_off()
-    clean_inputfile()
+    heizung = HeizungControl()
+    heizung.heizung_all_off()
+    clean_tokenfile()
 
