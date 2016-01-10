@@ -11,7 +11,7 @@ from .cron import HeizungCronControl
 
 class HeizungControl(HeizungCronControl):
     def __init__(self, init_board=False):
-        self.pdf = pifacedigitalio.PiFaceDigital(init_board=init_board)
+        self.pfd = pifacedigitalio.PiFaceDigital(init_board=init_board)
 
     def heizung_create_token(self, channel, duration):
 
@@ -38,7 +38,7 @@ class HeizungControl(HeizungCronControl):
 
     def heizung_1ch(self, channel, duration):
         self.heizung_create_token(channel, duration)
-        # self.heizung_1ch_on(channel)
+        self.heizung_1ch_on(channel)
         self.add_off_event(datetime.now(), channel, duration)
 
 
