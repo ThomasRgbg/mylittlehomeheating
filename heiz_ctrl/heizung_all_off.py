@@ -28,10 +28,8 @@ if __name__ == '__main__':
     argparser.add_argument("-l", "--logfile", dest="logfile",
                     help="logfile to use")
 
-    argparser.add_argument("-i", "--init", dest="init",
+    argparser.add_argument("-i", "--init", action='store_true', dest="init",
                     help="Init hardware")
-
-
 
     args = argparser.parse_args()
 
@@ -49,6 +47,8 @@ if __name__ == '__main__':
 
     logger.debug('Used options: {0}'.format(args))
 
+    # The hardware need to be init one time after boot. To do this, run this 
+    # programm at boot with -i 1
     if args.init is not None:
         init = True
     else:

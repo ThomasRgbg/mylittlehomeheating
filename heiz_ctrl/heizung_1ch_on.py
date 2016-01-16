@@ -34,6 +34,9 @@ if __name__ == '__main__':
     argparser.add_argument("-t", "--time", dest="duration", type=int,
                     help="heating duration(time on)", required=True)
 
+    argparser.add_argument("-i", "--init", action='store_true', dest="init",
+                    help="Init hardware")
+
     args = argparser.parse_args()
 
     if args.logfile is not None:
@@ -44,6 +47,13 @@ if __name__ == '__main__':
         sys.stdout = console_log
         sys.stderr = console_log
 
+    # The hardware need to be init one time after boot. To do this, run this.
+    # programm at boot with -i 1
+    if args.init is not None:
+        init = True
+    else:
+        init = False
+
     # Setup logging.
     logging.basicConfig(level = args.loglevel, datefmt='%H:%M:%S', format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s')
     logger = logging.getLogger(__name__)
@@ -52,8 +62,6 @@ if __name__ == '__main__':
 
     logger.info("Heizung channel: {0}, duration {1}".format(args.channel,args.duration))
 
-
-    heizung = HeizungControl()
+    heizung = HeizungControl(init_board=init)
     heizung.heizung_1ch(args.channel,args.duration)
-
 

@@ -24,14 +24,22 @@ class HeizungControl(HeizungCronControl):
         file.close()
 
     def heizung_all_off(self):
-        self.pfd.output_pins[0].value=1 # "Schlafzimmer" (Buero)
-        self.pfd.output_pins[1].value=1 # "Kinderzimmer" (Schlafzimmer)
-        self.pfd.output_pins[2].value=1 # Bad
-        self.pfd.output_pins[3].value=1 # Wohnzimmer
+        # This requires a small patch in pifacedigitalio/core.py:
+        ## else:
+        ##    # finish configuring the board
+        ##    #self.gpioa.value = 0
+        ##    self.iodira.value = 0  # GPIOA as outputs
+        # So the self.gpioa.value should not be set.
+        if (self.pfd.output_port.value & 0x0f) is not 0x0f:
+            self.pfd.output_pins[0].value=1 # "Schlafzimmer" (Buero)
+            self.pfd.output_pins[1].value=1 # "Kinderzimmer" (Schlafzimmer)
+            self.pfd.output_pins[2].value=1 # Bad
+            self.pfd.output_pins[3].value=1 # Wohnzimmer
         sleep(0.1)
         print("State of Piface: {:08b} ".format(self.pfd.output_port.value))
 
     def heizung_1ch_on(self, channel):
+        # TODO: Only one channel could be enabled at a time.
         self.heizung_all_off()
         self.pfd.output_pins[channel].value=0
         print("State of Piface: {:08b} ".format(self.pfd.output_port.value))
