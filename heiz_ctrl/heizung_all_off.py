@@ -35,9 +35,9 @@ if __name__ == '__main__':
 
     if args.logfile is not None:
         if sys.version_info < (3, 0):
-            console_log = open(opts.logfile, 'a', 1)
+            console_log = open(args.logfile, 'a', 1)
         else:
-            console_log = open(opts.logfile, 'a', 1, encoding='utf-8')
+            console_log = open(args.logfile, 'a', 1, encoding='utf-8')
         sys.stdout = console_log
         sys.stderr = console_log
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     logger.debug('Used options: {0}'.format(args))
 
     # The hardware need to be init one time after boot. To do this, run this 
-    # programm at boot with -i 1
+    # programm at boot with -i
     if args.init is not None:
         init = True
     else:
