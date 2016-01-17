@@ -30,15 +30,15 @@ if ort != None and zeit != None:
     print("<p> Zeit {0}</p>".format(zeit))
 
     if ort=='bad':
-        call(["./heizung_1ch_on.py",'2',zeit])
+        call(["heizung_1ch_on.py",'-c','2','-t',zeit])
     elif ort=='wohnzimmer':
-        call(["./heizung_1ch_on.py",'3',zeit])
+        call(["heizung_1ch_on.py",'-c','3','-t',zeit])
     elif ort=='arbeitszimmer':
-        call(["./heizung_1ch_on.py",'0',zeit])
+        call(["heizung_1ch_on.py",'-c','0','-t',zeit])
     elif ort=='schlafzimmer':
-        call(["./heizung_1ch_on.py",'1',zeit])
+        call(["heizung_1ch_on.py",'-c','1','-t',zeit])
     else:
-        call(["./heizung_all_off.py"])
+        call(["heizung_all_off.py"])
 
 else:
     print("<p> Error: </p>")
