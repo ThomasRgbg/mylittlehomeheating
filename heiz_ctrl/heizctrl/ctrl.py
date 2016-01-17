@@ -10,13 +10,20 @@ import pifacedigitalio
 from .cron import HeizungCronControl
 
 class HeizungControl(HeizungCronControl):
-    def __init__(self, init_board=False):
+    def __init__(self, init_board=False, logger=None):
         self.pfd = pifacedigitalio.PiFaceDigital(init_board=init_board)
+        self.logger = logger
+
+    def log_info(self, string):
+        if self.logger is None:
+            print(string)
+        else:
+            self.logger.info(string)
 
     def heizung_create_token(self, channel, duration):
 
         endtime = datetime.now() + timedelta(seconds=duration*60)
-        print("create token valid until {0}".format(endtime))
+        self.log_info("create token valid until {0}".format(endtime))
 
         file = open('/var/lock/heizung_token.txt', 'w')
         file.write('%d,%s\n'% (channel, endtime.strftime("%Y,%m,%d,%H,%M,%S") ) )
@@ -24,6 +31,8 @@ class HeizungControl(HeizungCronControl):
         file.close()
 
     def heizung_all_off(self):
+        # Run only, if needed. So the valves will be not used to often.
+
         # This requires a small patch in pifacedigitalio/core.py:
         ## else:
         ##    # finish configuring the board
@@ -36,13 +45,13 @@ class HeizungControl(HeizungCronControl):
             self.pfd.output_pins[2].value=1 # Bad
             self.pfd.output_pins[3].value=1 # Wohnzimmer
         sleep(0.1)
-        print("State of Piface: {:08b} ".format(self.pfd.output_port.value))
+        self.log_info("State of Piface: {:08b} ".format(self.pfd.output_port.value))
 
     def heizung_1ch_on(self, channel):
         # TODO: Only one channel could be enabled at a time.
         self.heizung_all_off()
         self.pfd.output_pins[channel].value=0
-        print("State of Piface: {:08b} ".format(self.pfd.output_port.value))
+        self.log_info("State of Piface: {:08b} ".format(self.pfd.output_port.value))
 
     def heizung_1ch(self, channel, duration):
         self.heizung_create_token(channel, duration)

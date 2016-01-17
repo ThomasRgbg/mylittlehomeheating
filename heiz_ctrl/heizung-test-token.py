@@ -33,7 +33,7 @@ def clean_tokenfile():
 
 cleanup = False
 
-logprint("Testing Token")
+# logprint("Testing Token")
 
 if os.path.isfile(tokenfile):
     os.chown(tokenfile,1000,1000)

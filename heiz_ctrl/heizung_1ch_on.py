@@ -62,6 +62,6 @@ if __name__ == '__main__':
 
     logger.info("Heizung channel: {0}, duration {1}".format(args.channel,args.duration))
 
-    heizung = HeizungControl(init_board=init)
+    heizung = HeizungControl(init_board=init, logger=logger)
     heizung.heizung_1ch(args.channel,args.duration)
 

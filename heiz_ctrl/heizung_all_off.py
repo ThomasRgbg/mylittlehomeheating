@@ -54,7 +54,7 @@ if __name__ == '__main__':
     else:
         init = False
 
-    heizung = HeizungControl(init_board=init)
+    heizung = HeizungControl(init_board=init, logger=logger)
     heizung.heizung_all_off()
 
 

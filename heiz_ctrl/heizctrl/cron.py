@@ -39,7 +39,7 @@ class HeizungCronControl(object):
     def add_on_event(self, timestamp, channel, duration):
         self.reload_crontab()
         now = datetime.now()
-        on_cmd = '/usr/local/bin/heizung_1ch_on.py {0} {1}'.format(channel,duration)
+        on_cmd = '/usr/local/bin/heizung_1ch_on.py -c {0} -t {1} -l /var/log/heiz_ctrl.log'.format(channel,duration)
         on_job = self.crontab.new(command=on_cmd)
         on_job.set_comment(timestamp.strftime('%Y.%m.%d %H:%M:%S,') + 'Heizung On')
         on_str = timestamp.strftime('%M %H %d %m *')
@@ -49,7 +49,7 @@ class HeizungCronControl(object):
     def add_off_event(self, timestamp, channel, duration):
         self.reload_crontab()
         now = datetime.now()
-        off_job = self.crontab.new(command='/usr/local/bin/heizung_all_off.py')
+        off_job = self.crontab.new(command='/usr/local/bin/heizung_all_off.py -l /var/log/heiz_ctrl.log')
         off_job.set_comment(timestamp.strftime('%Y.%m.%d %H:%M:%S,') + 'Heizung Off')
         off_time = timestamp + timedelta(seconds=duration*60)
         off_str = off_time.strftime('%M %H %d %m *')
