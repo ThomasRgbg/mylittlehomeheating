@@ -45,19 +45,20 @@ class HeizungControl(HeizungCronControl):
             self.pfd.output_pins[2].value=1 # Bad
             self.pfd.output_pins[3].value=1 # Wohnzimmer
         sleep(0.1)
-        self.log_info("State of Piface: {:08b} ".format(self.pfd.output_port.value))
+        self.log_info("(all_off) " + self.heizung_status() )
 
     def heizung_1ch_on(self, channel):
         # TODO: Only one channel could be enabled at a time.
         self.heizung_all_off()
         self.pfd.output_pins[channel].value=0
-        self.log_info("State of Piface: {:08b} ".format(self.pfd.output_port.value))
+        self.log_info("(1ch_on) " + self.heizung_status() )
 
     def heizung_1ch(self, channel, duration):
         self.heizung_create_token(channel, duration)
         self.heizung_1ch_on(channel)
         self.add_off_event(datetime.now(), channel, duration)
 
-
+    def heizung_status(self):
+        return ("State of Piface: {:08b} ".format(self.pfd.output_port.value))
 
 
