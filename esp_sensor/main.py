@@ -14,6 +14,10 @@ import socket
 import gc
 import machine
 
+import micropython
+micropython.alloc_emergency_exception_buf(100)
+# Allocate RAM for exception buffer in interrupts
+
 from wlan import mywlan
 
 data_queue = False
@@ -39,6 +43,26 @@ def get_temp():
     
     return(tdata)
 
+def take_temp_cb(timer):
+    global data_queue
+
+    tdata = get_temp()
+
+    if data_queue:
+        data_queue += tdata.dump()
+    else:
+        data_queue = tdata.dump()
+    print(len(data_queue.split(',')))
+
+
+tim = machine.Timer(-1)
+
+def start_temp():
+    tim.init(period=10000, mode=machine.Timer.PERIODIC, callback=take_temp_cb)
+
+def stop_temp():
+    tim.deinit()
+
 
 def send_data(data):
     try:
@@ -56,32 +80,28 @@ def send_data(data):
     #response could be "ok,sleep", "nok,nosleep" etc.
 
 
-
 def read_temp_loop():
 
     global data_queue
 
     while(True):
-        tdata = get_temp()
-        
-        if data_queue:
-            data_queue += tdata.dump()
-        else:
-            data_queue = tdata.dump()
-        print(len(data_queue.split(',')))
-
+        while(data_queue == False):
+            pass
+    
         response = (send_data(data_queue)).decode()
         print(response)
 
         if int(response.split(',')[0]) is not len(data_queue.split(',')):
             break
+        else:
+            data_queue = False
         if response.split(',')[1] == 'deepsleep':
             print('Going to deep sleep')
             do_deepsleep()
         if response.split(',')[1] == 'stop':
             break
         else:
-            time.sleep(9.99)
+            time.sleep(19.99)
             gc.collect()
 
 
