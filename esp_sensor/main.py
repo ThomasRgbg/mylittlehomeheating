@@ -33,26 +33,30 @@ class temperaturedata(object):
         return str(self.timestamp) + ',' + str(self.temp1) + ','  + str(self.temp2) + ',' + str(self.temp3) + ',||||,'
 
 
-def get_temp():
+def get_sensor():
     tdata = temperaturedata()
-    
+
     tdata.timestamp = time.time()
     tdata.temp1 = 1.0
     tdata.temp2 = 2.0
     tdata.temp3 = 3.0
-    
+
     return(tdata)
 
 def take_temp_cb(timer):
     global data_queue
 
-    tdata = get_temp()
+    tdata = get_sensor()
 
     if data_queue:
         data_queue += tdata.dump()
     else:
         data_queue = tdata.dump()
-    print(len(data_queue.split(',')))
+    print("Dataqueue: {0}".format(len(data_queue.split(',') )) )
+
+    if len(data_queue.split(',')) > 200:
+        print("Stopping measurements, risk of memory overflow")
+        stop_temp()
 
 
 tim = machine.Timer(-1)
@@ -74,44 +78,60 @@ def send_data(data):
         s.close()
     except OSError as e:
         print("send_data(): Socket OS error({0})".format(e))
-        return 'nok,stop'
+        return b'0,error'
 
     return response
-    #response could be "ok,sleep", "nok,nosleep" etc.
+    #response could be "6,sleep", "0,nosleep" etc.
 
 
-def read_temp_loop():
+def send_data_loop():
 
     global data_queue
+    errorcount = 0
 
     while(True):
+        # Wait until first data is in queue:
         while(data_queue == False):
             pass
     
+        wl.connect()
         response = (send_data(data_queue)).decode()
-        print(response)
+        wl.off()
+        print("Got from Server: " + response)
 
         if int(response.split(',')[0]) is not len(data_queue.split(',')):
-            break
+            # Server did not receive all data, try again after some delay.
+            errorcount += 1
+            time.sleep(15 * errorcount)
         else:
+            # all ok, clear queue
             data_queue = False
+            errorcount = 0
+            gc.collect()
+
+        if errorcount > 5:
+            break
+
         if response.split(',')[1] == 'deepsleep':
+            # This is just for testing. Does not help a lot, since when deep-sleeping
+            # also no data is taken from the sensor.
             print('Going to deep sleep')
-            do_deepsleep()
+            do_deepsleep(15)
         if response.split(',')[1] == 'stop':
+            # Stop this loop
             break
         else:
             time.sleep(19.99)
-            gc.collect()
 
 
-def do_deepsleep():
+def do_deepsleep(seconds):
     rtc = machine.RTC()
     # Sleep n ms
-    rtc.alarm(rtc.ALARM0, 5000)
+    rtc.alarm(rtc.ALARM0, seconds * 1000)
     machine.deepsleep()
     # Deep sleep will return as reboot of the ESP
-    
+
+
 
 if __name__ == "__main__":
     rtc = machine.RTC()
@@ -123,10 +143,13 @@ if __name__ == "__main__":
     else:
         machine_wakeup=0
 
+    start_temp()
+
     wl = mywlan()
     
     wl.connect()
+    wl.off()
 
-    read_temp_loop()
+    send_data_loop()
 
-
+    stop_temp()

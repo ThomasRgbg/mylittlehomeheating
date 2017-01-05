@@ -18,8 +18,14 @@ class mywlan(object):
         start = time.ticks_ms()
     
         while (time.ticks_diff(time.ticks_ms(), start) < 5000):
-            if self.sta_if.isconnected():
-                ntptime.settime()
+            if self.sta_if.isconnected() and time.time() < 536962532:
+                try:
+                    print("Sync Time via NTP")
+                    ntptime.settime()
+                except OSError:
+                    # It nis not critical, if time is not synced, since 
+                    # he will do this with next send loop.
+                    pass
                 break
 
     def isconnected(self):
