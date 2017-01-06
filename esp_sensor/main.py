@@ -15,12 +15,17 @@ import gc
 import machine
 
 import micropython
-micropython.alloc_emergency_exception_buf(100)
+
+# micropython.alloc_emergency_exception_buf(100)
 # Allocate RAM for exception buffer in interrupts
 
 from wlan import mywlan
+from machine import Pin
+from machine import I2C
 
 data_queue = False
+
+board_id = '1'
 
 class temperaturedata(object):
     def __init__(self):
@@ -30,16 +35,47 @@ class temperaturedata(object):
         self.timestamp = 0
 
     def dump(self):
-        return str(self.timestamp) + ',' + str(self.temp1) + ','  + str(self.temp2) + ',' + str(self.temp3) + ',||||,'
+        return board_id + ',' + str(self.timestamp) + ',' + str(self.temp1) + ','  + str(self.temp2) + ',' + str(self.temp3)
+
+
+i2c0 = I2C(scl=Pin(2), sda=Pin(4), freq=10000)
+# Sensor at 0x1b
+i2c1 = I2C(scl=Pin(13), sda=Pin(12), freq=10000)
+# Sensor at 0x1d
+# i2c2 = I2C(scl=Pin(15), sda=Pin(14), freq=10000)
+# Sensor not connected
 
 
 def get_sensor():
     tdata = temperaturedata()
 
     tdata.timestamp = time.time()
-    tdata.temp1 = 1.0
-    tdata.temp2 = 2.0
-    tdata.temp3 = 3.0
+    #tdata.temp1 = 1.0
+    
+    try:
+        i2c0.writeto(0x1b, b'\x05')
+        regs = i2c0.readfrom(0x1b, 2)
+    except OSError:
+        tdata.temp1 = -254.0
+    else:
+        tdata.temp1 = ((regs[0] & 0x0f) * 0x100  + (regs[1] & 0xff)) / 0x10
+
+
+        if tdata.temp1 > 60.0 or tdata.temp1 < -10.0:
+            tdata.temp1 = -254.0
+    
+    try:
+        i2c1.writeto(0x1d, b'\x05')
+        regs = i2c1.readfrom(0x1d, 2)
+    except OSError:
+        tdata.temp2 = -254.0
+    else:
+        tdata.temp2 = ((regs[0] & 0x0f) * 0x100  + (regs[1] & 0xff)) / 0x10
+
+        if tdata.temp2 > 60.0 or tdata.temp2 < -10.0:
+            tdata.temp2 = -254.0
+
+    tdata.temp3 = -254.0
 
     return(tdata)
 
@@ -49,7 +85,7 @@ def take_temp_cb(timer):
     tdata = get_sensor()
 
     if data_queue:
-        data_queue += tdata.dump()
+        data_queue += ',' + tdata.dump()
     else:
         data_queue = tdata.dump()
     print("Dataqueue: {0}".format(len(data_queue.split(',') )) )
@@ -62,7 +98,7 @@ def take_temp_cb(timer):
 tim = machine.Timer(-1)
 
 def start_temp():
-    tim.init(period=10000, mode=machine.Timer.PERIODIC, callback=take_temp_cb)
+    tim.init(period=30000, mode=machine.Timer.PERIODIC, callback=take_temp_cb)
 
 def stop_temp():
     tim.deinit()
@@ -106,6 +142,7 @@ def send_data_loop():
         else:
             # all ok, clear queue
             data_queue = False
+            print('Dataqueue: 0')
             errorcount = 0
             gc.collect()
 
@@ -121,7 +158,7 @@ def send_data_loop():
             # Stop this loop
             break
         else:
-            time.sleep(19.99)
+            time.sleep(5*60)
 
 
 def do_deepsleep(seconds):
@@ -146,7 +183,8 @@ if __name__ == "__main__":
     start_temp()
 
     wl = mywlan()
-    
+
+    # Connect one time to trigger time sync
     wl.connect()
     wl.off()
 

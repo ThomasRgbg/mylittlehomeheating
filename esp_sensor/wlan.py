@@ -10,6 +10,9 @@ password = ''
 class mywlan(object):
     def __init__(self):
         self.sta_if = network.WLAN(network.STA_IF)
+        self.ap_if = network.WLAN(network.AP_IF)
+        self.sta_if.active(False)
+        self.ap_if.active(False)
 
     def connect(self):
         self.sta_if.active(True)
