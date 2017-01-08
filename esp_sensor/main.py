@@ -19,7 +19,7 @@ from wlan import mywlan
 from machine import Pin
 from machine import I2C
 
-data_queue = False
+data_queue = []
 
 board_id = '1'
 
@@ -78,25 +78,23 @@ def get_sensor():
 def take_temp_cb(timer):
     global data_queue
 
-    if data_queue and len(data_queue.split(',')) > 200:
+    if len(data_queue) > 50:
         print("Stopping measurements, risk of memory overflow")
         stop_temp()
         return
 
     #If more queue filled up, do not read samples
-    if data_queue and len(data_queue.split(',')) > 120:
+    if len(data_queue) > 40:
         print("Queue filled up, skipping measurement")
         pass
     else:
 
         tdata = get_sensor()
 
-        if data_queue:
-            data_queue += ',' + tdata.dump()
-        else:
-            data_queue = tdata.dump()
+        data_queue.append(tdata)
 
-    print("Dataqueue: {0}".format(len(data_queue.split(',') )) )
+    gc.collect()
+    print("Dataqueue: {0}, MEM: {1}".format(len(data_queue), gc.mem_free() ) )
 
 
 tim = machine.Timer(-1)
@@ -131,24 +129,30 @@ def send_data_loop():
 
     while(True):
         # Wait until first data is in queue:
-        while(data_queue == False):
+        while(len(data_queue) == 0):
             pass
     
         wl.connect()
         # TODO: Seems to be a size limit, server receives only 80 words
-        response = (send_data(data_queue)).decode()
+        data = ''
+        for x in data_queue[0:10]:
+            data += x.dump() + ','
+        # Cut ',' at the end
+        data = data[:-1]
+        response = (send_data(data)).decode()
         print("Got from Server: " + response)
+        gc.collect()
 
-        if int(response.split(',')[0]) is not len(data_queue.split(',')):
+        if int(response.split(',')[0]) is not len(data_queue[0:10]):
             # Server did not receive all data, try again after some delay.
             print('Response of server does not match queue length')
             errorcount += 1
-            print('Errorcount {0}, Queue {1}'.format(errorcount, len(data_queue.split(','))) )
+            print('Errorcount {0}, Queue {1}'.format(errorcount, len(data_queue)) )
             # time.sleep(15 * errorcount)
         else:
             # all ok, clear queue
-            data_queue = False
-            print('Dataqueue: 0')
+            data_queue = data_queue[10:]
+            print('Dataqueue: {0}'.format(len(data_queue)) )
             errorcount = 0
             gc.collect()
 
@@ -165,9 +169,15 @@ def send_data_loop():
             # Stop this loop
             break
         elif response.split(',')[1] == 'nosleep':
-            time.sleep(5*60)
+            pass
         else:
             wl.off()
+
+        if len(data_queue) > 5:
+            # Still lot data to send
+            time.sleep(10)
+        else:
+            # Not much data in buffer, wait for next iteration
             time.sleep(5*60)
 
 
