@@ -1,10 +1,6 @@
 # Temperature / Other sensor for ESP8266 board. 
 # 
 # Todolist:
-# - better iteration time handling
-# - Wifi on/off on demand
-# - Read multiple values, send once
-# - Implement I2C sensors
 # - Data storage while (deep) sleep
 
 
@@ -82,17 +78,25 @@ def get_sensor():
 def take_temp_cb(timer):
     global data_queue
 
-    tdata = get_sensor()
-
-    if data_queue:
-        data_queue += ',' + tdata.dump()
-    else:
-        data_queue = tdata.dump()
-    print("Dataqueue: {0}".format(len(data_queue.split(',') )) )
-
-    if len(data_queue.split(',')) > 200:
+    if data_queue and len(data_queue.split(',')) > 200:
         print("Stopping measurements, risk of memory overflow")
         stop_temp()
+        return
+
+    #If more queue filled up, do not read samples
+    if data_queue and len(data_queue.split(',')) > 120:
+        print("Queue filled up, skipping measurement")
+        pass
+    else:
+
+        tdata = get_sensor()
+
+        if data_queue:
+            data_queue += ',' + tdata.dump()
+        else:
+            data_queue = tdata.dump()
+
+    print("Dataqueue: {0}".format(len(data_queue.split(',') )) )
 
 
 tim = machine.Timer(-1)
@@ -131,14 +135,16 @@ def send_data_loop():
             pass
     
         wl.connect()
+        # TODO: Seems to be a size limit, server receives only 80 words
         response = (send_data(data_queue)).decode()
-        wl.off()
         print("Got from Server: " + response)
 
         if int(response.split(',')[0]) is not len(data_queue.split(',')):
             # Server did not receive all data, try again after some delay.
+            print('Response of server does not match queue length')
             errorcount += 1
-            time.sleep(15 * errorcount)
+            print('Errorcount {0}, Queue {1}'.format(errorcount, len(data_queue.split(','))) )
+            # time.sleep(15 * errorcount)
         else:
             # all ok, clear queue
             data_queue = False
@@ -154,10 +160,14 @@ def send_data_loop():
             # also no data is taken from the sensor.
             print('Going to deep sleep')
             do_deepsleep(15)
+            wl.off()
         if response.split(',')[1] == 'stop':
             # Stop this loop
             break
+        elif response.split(',')[1] == 'nosleep':
+            time.sleep(5*60)
         else:
+            wl.off()
             time.sleep(5*60)
 
 

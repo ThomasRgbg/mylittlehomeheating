@@ -15,11 +15,12 @@ class mywlan(object):
         self.ap_if.active(False)
 
     def connect(self):
-        self.sta_if.active(True)
-        self.sta_if.connect('thomasssid', password)
+        if not self.sta_if.isconnected():
+            self.sta_if.active(True)
+            self.sta_if.connect('thomasssid', password)
 
         start = time.ticks_ms()
-    
+        print("Connect wlan")
         while (time.ticks_diff(time.ticks_ms(), start) < 5000):
             if self.sta_if.isconnected() and time.time() < 536962532:
                 try:
@@ -30,9 +31,14 @@ class mywlan(object):
                     # he will do this with next send loop.
                     pass
                 break
+        if self.sta_if.isconnected():
+            print("Wlan connected")
+        else:
+            print("Wlan NOT connected")
 
     def isconnected(self):
         return self.sta_if.isconnected()
 
     def off(self):
+        print("Disconnect wlan")
         self.sta_if.active(False)
