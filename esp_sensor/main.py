@@ -22,6 +22,7 @@ from machine import I2C
 data_queue = []
 
 board_id = '1'
+sema_meas = False
 
 class temperaturedata(object):
     def __init__(self):
@@ -100,9 +101,11 @@ def take_temp_cb(timer):
         pass
     else:
 
+        sema_meas = True
         tdata = get_sensor()
 
         data_queue.append(tdata)
+        sema_meas = False
 
     gc.collect()
     print("Dataqueue: {0}, MEM: {1}".format(len(data_queue), gc.mem_free() ) )
@@ -143,6 +146,10 @@ def send_data_loop():
         # wdt.feed()
         # Wait until first data is in queue:
         while(len(data_queue) == 0):
+            pass
+        
+        # Sensor reading running. Try later again
+        if(sema_meas):
             pass
     
         wl.connect()
