@@ -34,11 +34,11 @@ class temperaturedata(object):
         return board_id + ',' + str(self.timestamp) + ',' + str(self.temp1) + ','  + str(self.temp2) + ',' + str(self.temp3)
 
 
-i2c0 = I2C(scl=Pin(2), sda=Pin(4), freq=10000)
+i2c0 = I2C(scl=Pin(2), sda=Pin(4), freq=100)
 # Sensor at 0x1b
-i2c1 = I2C(scl=Pin(13), sda=Pin(12), freq=10000)
+i2c1 = I2C(scl=Pin(13), sda=Pin(12), freq=100)
 # Sensor at 0x1d
-# i2c2 = I2C(scl=Pin(15), sda=Pin(14), freq=10000)
+# i2c2 = I2C(scl=Pin(15), sda=Pin(14), freq=100)
 # Sensor not connected
 
 
@@ -46,33 +46,44 @@ def get_sensor():
     tdata = temperaturedata()
 
     tdata.timestamp = time.time()
-    #tdata.temp1 = 1.0
-    
-    try:
-        i2c0.writeto(0x1b, b'\x05')
-        regs = i2c0.readfrom(0x1b, 2)
-    except OSError:
-        tdata.temp1 = -254.0
-    else:
-        tdata.temp1 = ((regs[0] & 0x0f) * 0x100  + (regs[1] & 0xff)) / 0x10
 
-
-        if tdata.temp1 > 60.0 or tdata.temp1 < -10.0:
+    for i in range(10):
+        try:
+            i2c0.writeto(0x1b, b'\x05')
+            regs = i2c0.readfrom(0x1b, 2)
+        except OSError:
             tdata.temp1 = -254.0
-    
-    try:
-        i2c1.writeto(0x1d, b'\x05')
-        regs = i2c1.readfrom(0x1d, 2)
-    except OSError:
-        tdata.temp2 = -254.0
-    else:
-        tdata.temp2 = ((regs[0] & 0x0f) * 0x100  + (regs[1] & 0xff)) / 0x10
+        else:
+            tdata.temp1 = ((regs[0] & 0x0f) * 0x100  + (regs[1] & 0xff)) / 0x10
 
-        if tdata.temp2 > 60.0 or tdata.temp2 < -10.0:
+
+            if tdata.temp1 > 60.0 or tdata.temp1 < -10.0:
+                tdata.temp1 = -254.0
+
+        if tdata.temp1 == -254.0:
+            continue
+        else:
+            break
+
+    for i in range(10):
+        try:
+            i2c1.writeto(0x1d, b'\x05')
+            regs = i2c1.readfrom(0x1d, 2)
+        except OSError:
             tdata.temp2 = -254.0
+        else:
+            tdata.temp2 = ((regs[0] & 0x0f) * 0x100  + (regs[1] & 0xff)) / 0x10
+
+            if tdata.temp2 > 60.0 or tdata.temp2 < -10.0:
+                tdata.temp2 = -254.0
+
+        if tdata.temp2 == -254.0:
+            continue
+        else:
+            break
 
     tdata.temp3 = -254.0
-
+    print("Tdata: {0},{1},{2}".format(tdata.temp1, tdata.temp2, tdata.temp3))
     return(tdata)
 
 def take_temp_cb(timer):
@@ -128,6 +139,8 @@ def send_data_loop():
     errorcount = 0
 
     while(True):
+    
+        # wdt.feed()
         # Wait until first data is in queue:
         while(len(data_queue) == 0):
             pass
@@ -194,6 +207,8 @@ if __name__ == "__main__":
     rtc = machine.RTC()
     rtc.irq(trigger=rtc.ALARM0, wake=machine.DEEPSLEEP)
 
+    #wdt = machine.WDT(id=0, timeout=15*60*1000)
+
     # check if the device woke from a deep sleep
     if machine.reset_cause() == machine.DEEPSLEEP_RESET:
         machine_wakeup=1
@@ -206,7 +221,7 @@ if __name__ == "__main__":
 
     # Connect one time to trigger time sync
     wl.connect()
-    wl.off()
+    # wl.off()
 
     send_data_loop()
 
