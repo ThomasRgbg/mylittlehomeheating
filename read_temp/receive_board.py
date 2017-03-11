@@ -58,7 +58,7 @@ if __name__== "__main__":
 
         logger.debug( "wait for connect")
         conn, addr = s.accept()
-        logger.debug('Connection address: {0} at {1}'.format(addr,datetime.datetime.now()) )
+        logger.info('Connection address: {0} at {1}'.format(addr,datetime.datetime.now()) )
         while True:
             data = conn.recv(1024)
             if not data: break
@@ -68,7 +68,8 @@ if __name__== "__main__":
 
                 for i in range( (len(data)) / 5):
                     timestamp = datetime.datetime.fromtimestamp(int(data[i*5 + 1]))
-                    timestamp = timestamp.replace(day=timestamp.day-1, year = timestamp.year + 30)
+                    timestamp = timestamp.replace(year = timestamp.year + 30)
+                    timestamp -= datetime.timedelta(days=1)
 
                     temp1 = float(data[i*5 + 2])
                     if temp1 == -254.0: temp1 = None
@@ -84,7 +85,7 @@ if __name__== "__main__":
                     temps = [1, None, None, None, temp1, temp2, temp3]
                     temps[0] = timestamp
 
-                    logger.debug("Write into db: {0}".format(temps))
+                    logger.info("Write into db: {0}".format(temps))
 
                     # convert (back) to tuple for sqlite3
                     ttemps = tuple(temps)
@@ -92,6 +93,7 @@ if __name__== "__main__":
                     # Table:
                     # cur.execute("CREATE TABLE Temperatur(Timestamp INT, TempVorlauf REAL, TempRuecklauf REAL, TempVorne REAL, TempHinten REAL, TempBoden REAL, TempLuft REAL)")
                     with sqlcon:
+                        sqlcon.execute("PRAGMA busy_timeout = 60000")   # wait up to 60s if concurent access is active
                         cur = sqlcon.cursor()
                         cur.executemany("INSERT INTO Temperatur VALUES(?, ?, ?, ?, ?, ?, ?)", (ttemps,) ) # Important: (foo,)
 
