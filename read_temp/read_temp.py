@@ -107,7 +107,7 @@ if __name__== "__main__":
         temps = [1, temp_vorlauf, temp_ruecklauf, temp_luft, None, None, None]
         temps[0] = datetime.datetime.now()
 
-	logger.debug("Write into db: {0}".format(temps))
+        logger.debug("Write into db: {0}".format(temps))
 
         # convert (back) to tuple for sqlite3
         ttemps = tuple(temps)
@@ -115,11 +115,12 @@ if __name__== "__main__":
         # Table:
         # cur.execute("CREATE TABLE Temperatur(Timestamp INT, TempVorlauf REAL, TempRuecklauf REAL, TempVorne REAL, TempHinten REAL, TempBoden REAL, TempLuft REAL)")
         with sqlcon:
-	    cur = sqlcon.cursor()
+            sqlcon.execute("PRAGMA busy_timeout = 60000")   # 60 s
+            cur = sqlcon.cursor()
             cur.executemany("INSERT INTO Temperatur VALUES(?, ?, ?, ?, ?, ?, ?)", (ttemps,) ) # Important: (foo,)
 
-	logger.debug("Wait for next turn")
-	beat.sleep()
+        logger.debug("Wait for next turn")
+        beat.sleep()
 
 
 
