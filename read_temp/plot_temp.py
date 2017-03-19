@@ -56,6 +56,7 @@ def dezimate(x, y, dez):
 def import_data(days=1):
     tdata = temperaturdata()
     con = lite.connect('/var/lib/temperatur/temperatur.db')
+    con.execute("PRAGMA busy_timeout = 60000")   # 60 s
 
     t_old = [ datetime.datetime.now() - datetime.timedelta(days=days) ]
     tt_old = tuple(t_old)
@@ -70,7 +71,7 @@ def import_data(days=1):
 
             tstamp,t1,t2,t3,t4,t5,t6 = row
 
-            timestamp = datetime.datetime.strptime(tstamp, "%Y-%m-%d %H:%M:%S.%f")
+            timestamp = datetime.datetime.strptime(tstamp[0:19], "%Y-%m-%d %H:%M:%S")
 
             tdata.temp1.append(t1)
             tdata.temp2.append(t2)
@@ -93,11 +94,11 @@ def create_plot(tdata, outputfile, dezi):
     rc('ytick', labelsize=8)
 
     fig = Figure(figsize=(8,8))
-    ax = fig.add_subplot(211)
-    bx = fig.add_subplot(212)
-#    ax = fig.add_subplot(311)
-#    bx = fig.add_subplot(312)
-#    cx = fig.add_subplot(313)
+#    ax = fig.add_subplot(211)
+#    bx = fig.add_subplot(212)
+    ax = fig.add_subplot(311)
+    bx = fig.add_subplot(312)
+    cx = fig.add_subplot(313)
 
     (x1,y1) = remove_none(times, tdata.temp3)
     (x1,y1) = dezimate(x1,y1,dezi)
@@ -119,15 +120,15 @@ def create_plot(tdata, outputfile, dezi):
     bx.legend(loc=2, prop={'size':7})
     bx.grid()
 
-#    (x1,y1) = remove_none(times, tdata.temp5)
-#    (x1,y1) = dezimate(x1,y1,dezi)
-#    (x2,y2) = remove_none(times, tdata.temp6)  
-#    (x2,y2) = dezimate(x2,y2,dezi)
+    (x1,y1) = remove_none(times, tdata.temp5)
+    (x1,y1) = dezimate(x1,y1,dezi)
+    (x2,y2) = remove_none(times, tdata.temp6)  
+    (x2,y2) = dezimate(x2,y2,dezi)
 
-#    cx.plot_date(x1, y1, xdate=True, ydate=False, linestyle='-', marker='', color='k', label='Boden')
-#    cx.plot_date(x2, y2, xdate=True, ydate=False, linestyle='-', marker='', color='b', label='Zuluft')
-#    cx.legend(loc=2, prop={'size':7})
-#    cx.grid()
+    cx.plot_date(x1, y1, xdate=True, ydate=False, linestyle='-', marker='', color='k', label='Boden')
+    cx.plot_date(x2, y2, xdate=True, ydate=False, linestyle='-', marker='', color='b', label='Zuluft')
+    cx.legend(loc=2, prop={'size':7})
+    cx.grid()
 
     # ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%d:%m'))
     fig.autofmt_xdate()
@@ -144,9 +145,9 @@ if __name__ == "__main__":
     tdata = import_data(days=2)
     # print len(tdata.temp1)
     create_plot(tdata, "/var/www/html/temperatur/2days.png", 8)
-    tdata = import_data(days=7)
+    # tdata = import_data(days=7)
     # print len(tdata.temp1)
-    create_plot(tdata, "/var/www/html/temperatur/7days.png", 64)
+    # create_plot(tdata, "/var/www/html/temperatur/7days.png", 64)
 
 
 
