@@ -85,8 +85,10 @@ def import_data(days=1):
 
 
 
-def create_plot(tdata, outputfile, dezi):
+def create_plot(tdata, outputfile):
     times = matplotlib.dates.date2num(tdata.timestamps)    
+
+    points = 400
 
 #    print len(times1)
 
@@ -101,32 +103,41 @@ def create_plot(tdata, outputfile, dezi):
     cx = fig.add_subplot(313)
 
     (x1,y1) = remove_none(times, tdata.temp3)
-    (x1,y1) = dezimate(x1,y1,dezi)
-    (x2,y2) = remove_none(times, tdata.temp4)  
-    (x2,y2) = dezimate(x2,y2,dezi)
+    if len(x1) != 0:
+        (x1,y1) = dezimate(x1,y1,int(len(x1) / points))
+        ax.plot_date(x1, y1 , xdate=True, ydate=False, linestyle='-', marker='', color='b', label='Vorne')
 
-    ax.plot_date(x1, y1 , xdate=True, ydate=False, linestyle='-', marker='', color='b', label='Vorne')
-    ax.plot_date(x2, y2,  xdate=True, ydate=False, linestyle='-', marker='', color='g', label='Gummibaum')
+    (x2,y2) = remove_none(times, tdata.temp4)
+    if len(x2) != 0:
+        (x2,y2) = dezimate(x2,y2,int(len(x2) / points))
+        ax.plot_date(x2, y2,  xdate=True, ydate=False, linestyle='-', marker='', color='g', label='Gummibaum')
+
     ax.legend(loc=2, prop={'size':7})
     ax.grid()
 
     (x1,y1) = remove_none(times, tdata.temp1)
-    (x1,y1) = dezimate(x1,y1,dezi)
-    (x2,y2) = remove_none(times, tdata.temp2)  
-    (x2,y2) = dezimate(x2,y2,dezi)
+    if len(x1) != 0:
+        (x1,y1) = dezimate(x1,y1,int(len(x1) / points))
+        bx.plot_date(x1, y1, xdate=True, ydate=False, linestyle='-', marker='', color='r', label='Zulauf')
 
-    bx.plot_date(x1, y1, xdate=True, ydate=False, linestyle='-', marker='', color='r', label='Zulauf')
-    bx.plot_date(x2, y2, xdate=True, ydate=False, linestyle='-', marker='', color='g', label='Ruecklauf')
+    (x2,y2) = remove_none(times, tdata.temp2)  
+    if len(x2) != 0:
+        (x2,y2) = dezimate(x2,y2,int(len(x2) / points))
+        bx.plot_date(x2, y2, xdate=True, ydate=False, linestyle='-', marker='', color='g', label='Ruecklauf')
+
     bx.legend(loc=2, prop={'size':7})
     bx.grid()
 
     (x1,y1) = remove_none(times, tdata.temp5)
-    (x1,y1) = dezimate(x1,y1,dezi)
-    (x2,y2) = remove_none(times, tdata.temp6)  
-    (x2,y2) = dezimate(x2,y2,dezi)
+    if len(x1) != 0:
+        (x1,y1) = dezimate(x1,y1,int(len(x1) / points))
+        cx.plot_date(x1, y1, xdate=True, ydate=False, linestyle='-', marker='', color='k', label='Boden')
 
-    cx.plot_date(x1, y1, xdate=True, ydate=False, linestyle='-', marker='', color='k', label='Boden')
-    cx.plot_date(x2, y2, xdate=True, ydate=False, linestyle='-', marker='', color='b', label='Zuluft')
+    (x2,y2) = remove_none(times, tdata.temp6)  
+    if len(x2) != 0:
+        (x2,y2) = dezimate(x2,y2,int(len(x2) / points))
+        cx.plot_date(x2, y2, xdate=True, ydate=False, linestyle='-', marker='', color='b', label='Zuluft')
+
     cx.legend(loc=2, prop={'size':7})
     cx.grid()
 
@@ -140,11 +151,10 @@ def create_plot(tdata, outputfile, dezi):
 if __name__ == "__main__":
     # print "a"
     tdata = import_data(days=1)
-    # print len(tdata.temp1)
-    create_plot(tdata, "/var/www/html/temperatur/1days.png", 2)
+    create_plot(tdata, "/var/www/html/temperatur/1days.png")
     tdata = import_data(days=2)
     # print len(tdata.temp1)
-    create_plot(tdata, "/var/www/html/temperatur/2days.png", 8)
+    create_plot(tdata, "/var/www/html/temperatur/2days.png")
     # tdata = import_data(days=7)
     # print len(tdata.temp1)
     # create_plot(tdata, "/var/www/html/temperatur/7days.png", 64)
